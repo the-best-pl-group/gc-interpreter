@@ -120,14 +120,14 @@
     (cond [(null? empty-store-spots!)
             (vector-set! the-store! store-count! val)
             (set! store-count! (+ 1 store-count!))
-            (ref-val (- 1 store-count!))]
+            (ref-val (- store-count! 1))]
           [else
             (let [(ref (car empty-store-spots!))]
                 (vector-set! the-store! ref val)
                 (set! store-count (+ 1 store-count!))
                 (set! empty-store-spots! (cdr empty-store-spots!))
                 (ref-val ref))]
-            ))
+            )))
 
 ;; (newref! val) takes a value val adds to the the-store!, and returns
 ;; a ref-val to the added value val.

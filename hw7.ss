@@ -236,11 +236,17 @@
 	   [def-prog (var exp) (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))]
 	   [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
 
+(define let-garbage-collect 
+  (lambda (new-environment)
+    (cases environment new-environment
+      [extend-env (var val old-environment)
+		  (remove-from-store! (expval->ref val))]
+      [else (display "you done goofed")])))
+
+(define count 0)
+
 (define value-of-exp
   (lambda (exp env)
-    (display (env->string env))
-    (display (vector->list the-store!))
-    (newline)
     (cases expression exp
 
 	   ;; Variable Expressions
@@ -248,7 +254,17 @@
 
 	   ;; Control Expressions
 	   [if-exp (exp1 exp2 exp3) (if (expval->bool (value-of-exp exp1 env)) (value-of-exp exp2 env) (value-of-exp exp3 env))]
-	   [let-exp (var exp1 exp2) (value-of-exp exp2 (extend-env var (newref! (value-of-exp exp1 env)) env))]
+	   [let-exp (var exp1 exp2) (let* ([newenv (extend-env var (newref! (value-of-exp exp1 env)) env)]
+					   [return-value (value-of-exp exp2 newenv)])
+				      (let-garbage-collect newenv)
+
+			;;	      (display count)
+			;;	      (set! count (+ count 1))
+			;;	      (display (env->string env))
+			;;	      (display (vector->list the-store!))
+			;;	      (newline)
+
+				      return-value)]
 
 	   ;; Constant Expressions
 	   [const-true () (bool-val #t)]

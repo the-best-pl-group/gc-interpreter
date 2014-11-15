@@ -90,7 +90,7 @@
 ;; store.
 (define empty-store
   (lambda ()
-    (make-vector 1)))
+    (make-vector 5)))
 
 ;; (initialize-store!) it initializes the-store! to (empty-store)
 (define initialize-store!
@@ -123,7 +123,7 @@
 (define newref!
   (lambda (val)
     (cond
-      [(>= (vector-length the-store!) store-count!)
+      [(>= store-count! (vector-length the-store!))
        (double-store!)
        (add-to-store! val)
        (ref-val (- store-count! 1))]

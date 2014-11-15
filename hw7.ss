@@ -129,6 +129,12 @@
                 (ref-val ref))]
             )))
 
+;;removes a value from the store & adds the now empty index to empty-store-spots!
+(define remove-from-store!
+  (lambda (ref-num)
+    (vector-set! the-store! ref-num 0)
+    (set! empty-store-spots! (cons ref-num empty-store-spots!))))
+
 ;; (newref! val) takes a value val adds to the the-store!, and returns
 ;; a ref-val to the added value val.
 (define newref!

@@ -85,6 +85,8 @@
 ;; the-store! is the store!
 (define the-store! 'uninitialized)
 (define store-count! 'uninitialized)
+(define empty-store-spots! 'uninitialized)
+
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
@@ -96,7 +98,8 @@
 (define initialize-store!
   (lambda ()
     (set! store-count! 0)
-    (set! the-store! (empty-store))))
+    (set! the-store! (empty-store))
+    (set! empty-store-spots! '())))
 
 ;; doubles the size of the store
 (define double-store!
@@ -112,11 +115,20 @@
 	      (vector-set! new-store ref-num (vector-ref old-store ref-num))
 	      (+ ref-num 1))])))
 
-;;adds a value to the store and increments the store count
+;;adds a value to the store and increments the store count and returns its ref-val
 (define add-to-store!
   (lambda (val)
-    (vector-set! the-store! store-count! val)
-    (set! store-count! (+ 1 store-count!))))
+    (cond [(null? empty-store-spots!)
+            (vector-set! the-store! store-count! val)
+            (set! store-count! (+ 1 store-count!))
+            (ref-val (- 1 store-count!))]
+          [else
+            (let [(ref (car empty-store-spots!))]
+                (vector-set! the-store! ref val)
+                (set! store-count (+ 1 store-count!))
+                (set! empty-store-spots! (cdr empty-store-spots!))
+                (ref-val ref))]
+            ))
 
 ;; (newref! val) takes a value val adds to the the-store!, and returns
 ;; a ref-val to the added value val.
@@ -125,11 +137,9 @@
     (cond
       [(>= store-count! (vector-length the-store!))
        (double-store!)
-       (add-to-store! val)
-       (ref-val (- store-count! 1))]
+       (add-to-store! val)]
       [else
-       (add-to-store! val)
-       (ref-val (- store-count! 1))])))
+       (add-to-store! val)])))
 
 ;; (deref ev) expects that ev is a reference (ref-val ref), and
 ;; returns the value of associated with ref in the store.

@@ -84,191 +84,208 @@
 
 ;; the-store! is the store!
 (define the-store! 'uninitialized)
+(define store-count! 'uninitialized)
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
 (define empty-store
-	(lambda ()
-		'() ))
+  (lambda ()
+    (make-vector 1)))
 
 ;; (initialize-store!) it initializes the-store! to (empty-store)
 (define initialize-store!
-	(lambda ()
-		(set! the-store! (empty-store))))
+  (lambda ()
+    (set! store-count! 0)
+    (set! the-store! (empty-store))))
+
+;; doubles the size of the store
+(define double-store!
+  (lambda ()
+    (set! the-store! (double-store!* the-store! (make-vector (vector-length the-store!)) 0))))
+
+(define double-store!*
+  (lambda (old-store new-store ref-num)
+    (cond
+      [(>= (- store-count! 1) ref-num) new-store]
+      [else (double-store!*
+	      old-store
+	      (vector-set! new-store ref-num (vector-ref old-store ref-num))
+	      (+ ref-num 1))])))
+
+;;adds a value to the store and increments the store count
+(define add-to-store!
+  (lambda (val)
+    (vector-set! the-store! store-count! val)
+    (set! store-count! (+ 1 store-count!))))
 
 ;; (newref! val) takes a value val adds to the the-store!, and returns
 ;; a ref-val to the added value val.
 (define newref!
-	(lambda (val)
-		(set! the-store! (append the-store! (list val)))
-		(ref-val (- (length the-store!) 1))
-))
+  (lambda (val)
+    (cond
+      [(>= (vector-length the-store!) store-count!)
+       (double-store!)
+       (add-to-store! val)
+       (ref-val (- store-count! 1))]
+      [else
+       (add-to-store! val)
+       (ref-val (- store-count! 1))])))
 
 ;; (deref ev) expects that ev is a reference (ref-val ref), and
 ;; returns the value of associated with ref in the store.
 (define deref
-	(lambda (ev)
-		(let 
-			([ref (expval->ref ev)])
-			(list-ref the-store! ref))))
+  (lambda (ev)
+    (let 
+      ([ref (expval->ref ev)])
+      (vector-ref the-store! ref))))
 
 ;; (setref! ev val) expects that ev is a reference (ref-val ref), and
 ;; it sets the reference ref to val in the the-store!
 (define setref!
-	(lambda (ev val)
-		(let
-			([ref (expval->ref ev)])
-			(set! the-store! (setref!* the-store! ref val)))))
-
-;; (setref!* store ref val) should return the store where var has been set to val.
-;; ref is an integer index into the store.  0 is the first element of the store and
-;; (- (length store) 1) is the index of the last element of the store.
-(define setref!*
-	(lambda (store ref val)
-		(cond
-			[(= 0 ref) (cons val (cdr store))]
-			[else (cons (car store) (setref!* (cdr store) (- ref 1) val))])))
-
+  (lambda (ev val)
+    (let
+      ([ref (expval->ref ev)])
+      (vector-set! the-store! ref val))))
 
 ;; ==================== Expressed Values ==================================
 
 ;; Expressed values are Int + Bool + Unit
 (define-datatype expval expval?
-  (num-val
-   (num number?))
-  (bool-val
-   (bool boolean?))
-  (unit-val)
-  (proc-val                                                                                          
-   (p proc?))  
-  (ref-val
-   (ref integer?))
-)
+		 (num-val
+		   (num number?))
+		 (bool-val
+		   (bool boolean?))
+		 (unit-val)
+		 (proc-val                                                                                          
+		   (p proc?))  
+		 (ref-val
+		   (ref integer?))
+		 )
 
 (define-datatype proc proc?                                                                          
-  (procedure                                                                                         
-    (params (list-of symbol?))                                                                                  
-    (body expression?)                                                                               
-    (saved-env environment?)))                                                                       
-	       
+		 (procedure                                                                                         
+		   (params (list-of symbol?))                                                                                  
+		   (body expression?)                                                                               
+		   (saved-env environment?)))                                                                       
+
 (define ref-val?
   (lambda (ev)
     (cases expval ev
-      [ref-val (ref) #t]
-      [else #f])))
+	   [ref-val (ref) #t]
+	   [else #f])))
 
 (define expval->num 
   (lambda (ev)
     (cases expval ev
-      [num-val (num) num]
-      [bool-val (bool) (if bool 1 0)]
-      [else (raise-exception 'expval->num "Expressed value is not a number or a Boolean: ~s" ev)])))
+	   [num-val (num) num]
+	   [bool-val (bool) (if bool 1 0)]
+	   [else (raise-exception 'expval->num "Expressed value is not a number or a Boolean: ~s" ev)])))
 
 (define expval->bool
   (lambda (ev)
     (cases expval ev
-      [bool-val (bool) bool]
-      [num-val (num) (not (= num 0))]
-      [else (raise-exception 'expval->bool "Expressed value is not a Boolean or a number: ~s" ev)])))
+	   [bool-val (bool) bool]
+	   [num-val (num) (not (= num 0))]
+	   [else (raise-exception 'expval->bool "Expressed value is not a Boolean or a number: ~s" ev)])))
 
 (define expval->ref
   (lambda (ev)
     (cases expval ev
-      [ref-val (ref) ref]
-      [else (raise-exception 'expval->ref "Expressed value is not a reference: ~s" ev)])))
+	   [ref-val (ref) ref]
+	   [else (raise-exception 'expval->ref "Expressed value is not a reference: ~s" ev)])))
 
 
 (define expval->proc                                                                                 
   (lambda (ev)                                                                                       
     (cases expval ev                                                                                 
-      [proc-val (p) p]                                                                               
-      [else (raise-exception 'expval->proc "Expressed value is not a procedure: ~s" ev)])))  
+	   [proc-val (p) p]                                                                               
+	   [else (raise-exception 'expval->proc "Expressed value is not a procedure: ~s" ev)])))  
 
 
 (define expval->string
   (lambda (ev)
     (cases expval ev
-      [bool-val (bool) (if bool "#true" "#false")]
-      [num-val (num) (number->string num)]
-      [unit-val () "#unit"]
-      [proc-val (p) "#proc"]      
-      [ref-val (ref) (string-append "#ref(" (number->string ref) ")") ]
-      )))
+	   [bool-val (bool) (if bool "#true" "#false")]
+	   [num-val (num) (number->string num)]
+	   [unit-val () "#unit"]
+	   [proc-val (p) "#proc"]      
+	   [ref-val (ref) (string-append "#ref(" (number->string ref) ")") ]
+	   )))
 
 ;; ==================== Evaluater ====================================
 
 (define value-of
   (lambda (prog env)
     (cases program prog
-      [a-prog (exp) (cons (value-of-exp exp env) env)]
-      [def-prog (var exp) (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))]
-      [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
+	   [a-prog (exp) (cons (value-of-exp exp env) env)]
+	   [def-prog (var exp) (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))]
+	   [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
 
 (define value-of-exp
   (lambda (exp env)
     (cases expression exp
 
-      ;; Variable Expressions
-      [var-exp (var) (deref (apply-env env var))]
+	   ;; Variable Expressions
+	   [var-exp (var) (deref (apply-env env var))]
 
-      ;; Control Expressions
-      [if-exp (exp1 exp2 exp3) (if (expval->bool (value-of-exp exp1 env)) (value-of-exp exp2 env) (value-of-exp exp3 env))]
-      [let-exp (var exp1 exp2) (value-of-exp exp2 (extend-env var (newref! (value-of-exp exp1 env)) env))]
+	   ;; Control Expressions
+	   [if-exp (exp1 exp2 exp3) (if (expval->bool (value-of-exp exp1 env)) (value-of-exp exp2 env) (value-of-exp exp3 env))]
+	   [let-exp (var exp1 exp2) (value-of-exp exp2 (extend-env var (newref! (value-of-exp exp1 env)) env))]
 
-      ;; Constant Expressions
-      [const-true () (bool-val #t)]
-      [const-false () (bool-val #f)]
-      [const-exp (num) (num-val num)]
+	   ;; Constant Expressions
+	   [const-true () (bool-val #t)]
+	   [const-false () (bool-val #f)]
+	   [const-exp (num) (num-val num)]
 
-      ;; Arithmetic / Logical Operators
-      [zero?-exp (exp) (apply-unary-op zero? (value-of-exp exp env) expval->num bool-val)]
-      [diff-exp (exp1 exp2) (apply-binary-op - (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
-      [plus-exp (exp1 exp2) (apply-binary-op + (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
-      [div-exp (exp1 exp2) 
-	       (apply-binary-op 
-		(lambda (x y) 
-		  (if (= y 0) (raise-exception 'value-of-exp "Attempt to divide by zero = ~s/~s." x y) (/ x y)))
-		(value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
-      [times-exp (exp1 exp2) (apply-binary-op * (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
-      [less-than-exp (exp1 exp2) (apply-binary-op < (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num bool-val)]
-      [equal-exp (exp1 exp2) (apply-binary-op = (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num bool-val)]
-      [and-exp (exp1 exp2) (apply-binary-op (lambda (a b) (and a b)) (value-of-exp exp1 env) (value-of-exp exp2 env) expval->bool bool-val)]
-      [or-exp (exp1 exp2) (apply-binary-op (lambda (a b) (or a b)) (value-of-exp exp1 env) (value-of-exp exp2 env) expval->bool bool-val)]
-      [not-exp (exp) (apply-unary-op not (value-of-exp exp env) expval->num bool-val)]
-      
-      ;; References 
-      [newref-exp (exp) (newref! (value-of-exp exp env))]
-      [deref-exp (exp) (deref (value-of-exp exp env))]      
-      [setref-exp (exp1 exp2) (setref! (value-of-exp exp1 env) (value-of-exp exp2 env)) (unit-val)] 
-      [assign-exp (var exp) (setref! (apply-env env var) (value-of-exp exp env)) (unit-val)]
-      
-      ;; Procedures
-      [proc-exp (vars body) (proc-val (procedure vars body env))]                                      
-      [call-exp (exp exps)                                                                          
-		(cases proc (expval->proc (value-of-exp exp env))                                                               
-		       [procedure (params body saved-env)                                                        
-				  (cond
-				   [(= (length params) (length exps)) 
-				    (let
-					([vals (map (lambda (x) (value-of-exp x env)) exps)])
-				      (value-of-exp body 
-						    (accumulate 
-						     (lambda (head acc) (extend-env (car head) (newref! (cdr head)) acc)) 
-						     saved-env
-						     (reverse (map (lambda (param val) (cons param val)) params vals)))))]
-				   [else (raise-exception 'value-of-exp 
-							  "Attempt to apply function with inconsistent number of arguments: ~s ~s." exp exps)])])]
-      [letrec-exp (p-name p-vars p-body body)                                                         
-		  (value-of-exp body (extend-env-rec p-name p-vars p-body env))]     
-      
-      ;; Printing
-      [print-exp (exp) (display (expval->string (value-of-exp exp env))) (unit-val)]
-      [newline-exp ()  (newline) (unit-val)]
-      
-      ;; Blocks
-      [block-exp (exps) (accumulate (lambda (exp acc) (value-of-exp exp env)) (unit-val) exps)]
-			
-      [else (raise-exception 'value-of-exp "Abstract syntax case not implemented: ~s" (car exp))])))
+	   ;; Arithmetic / Logical Operators
+	   [zero?-exp (exp) (apply-unary-op zero? (value-of-exp exp env) expval->num bool-val)]
+	   [diff-exp (exp1 exp2) (apply-binary-op - (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
+	   [plus-exp (exp1 exp2) (apply-binary-op + (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
+	   [div-exp (exp1 exp2) 
+		    (apply-binary-op 
+		      (lambda (x y) 
+			(if (= y 0) (raise-exception 'value-of-exp "Attempt to divide by zero = ~s/~s." x y) (/ x y)))
+		      (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
+	   [times-exp (exp1 exp2) (apply-binary-op * (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num num-val)]
+	   [less-than-exp (exp1 exp2) (apply-binary-op < (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num bool-val)]
+	   [equal-exp (exp1 exp2) (apply-binary-op = (value-of-exp exp1 env) (value-of-exp exp2 env) expval->num bool-val)]
+	   [and-exp (exp1 exp2) (apply-binary-op (lambda (a b) (and a b)) (value-of-exp exp1 env) (value-of-exp exp2 env) expval->bool bool-val)]
+	   [or-exp (exp1 exp2) (apply-binary-op (lambda (a b) (or a b)) (value-of-exp exp1 env) (value-of-exp exp2 env) expval->bool bool-val)]
+	   [not-exp (exp) (apply-unary-op not (value-of-exp exp env) expval->num bool-val)]
+
+	   ;; References 
+	   [newref-exp (exp) (newref! (value-of-exp exp env))]
+	   [deref-exp (exp) (deref (value-of-exp exp env))]      
+	   [setref-exp (exp1 exp2) (setref! (value-of-exp exp1 env) (value-of-exp exp2 env)) (unit-val)] 
+	   [assign-exp (var exp) (setref! (apply-env env var) (value-of-exp exp env)) (unit-val)]
+
+	   ;; Procedures
+	   [proc-exp (vars body) (proc-val (procedure vars body env))]                                      
+	   [call-exp (exp exps)                                                                          
+		     (cases proc (expval->proc (value-of-exp exp env))                                                               
+			    [procedure (params body saved-env)                                                        
+				       (cond
+					 [(= (length params) (length exps)) 
+					  (let
+					    ([vals (map (lambda (x) (value-of-exp x env)) exps)])
+					    (value-of-exp body 
+							  (accumulate 
+							    (lambda (head acc) (extend-env (car head) (newref! (cdr head)) acc)) 
+							    saved-env
+							    (reverse (map (lambda (param val) (cons param val)) params vals)))))]
+					 [else (raise-exception 'value-of-exp 
+								"Attempt to apply function with inconsistent number of arguments: ~s ~s." exp exps)])])]
+	   [letrec-exp (p-name p-vars p-body body)                                                         
+		       (value-of-exp body (extend-env-rec p-name p-vars p-body env))]     
+
+	   ;; Printing
+	   [print-exp (exp) (display (expval->string (value-of-exp exp env))) (unit-val)]
+	   [newline-exp ()  (newline) (unit-val)]
+
+	   ;; Blocks
+	   [block-exp (exps) (accumulate (lambda (exp acc) (value-of-exp exp env)) (unit-val) exps)]
+
+	   [else (raise-exception 'value-of-exp "Abstract syntax case not implemented: ~s" (car exp))])))
 
 ;; ==================== Evaluation Helper Functions ====================
 
@@ -368,8 +385,3 @@
 	       (newline)
 	       )))])
 	(read-eval-print env)]))))
-
-
-
-
-

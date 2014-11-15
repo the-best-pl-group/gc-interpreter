@@ -101,16 +101,15 @@
 ;; doubles the size of the store
 (define double-store!
   (lambda ()
-    (set! the-store! (double-store!* the-store! (make-vector (vector-length the-store!)) 0))))
+    (set! the-store! (double-store!* the-store! (make-vector (* 2 (vector-length the-store!))) 0))))
 
 (define double-store!*
   (lambda (old-store new-store ref-num)
     (cond
-      [(>= (- store-count! 1) ref-num) new-store]
-      [else (double-store!*
-	      old-store
-	      (vector-set! new-store ref-num (vector-ref old-store ref-num))
-	      (+ ref-num 1))])))
+      [(>= ref-num store-count!) new-store]
+      [else
+	(vector-set! new-store ref-num (vector-ref old-store ref-num))
+	(double-store!* old-store new-store (+ ref-num 1))])))
 
 ;;adds a value to the store and increments the store count
 (define add-to-store!
@@ -123,7 +122,7 @@
 (define newref!
   (lambda (val)
     (cond
-      [(>= store-count! (vector-length the-store!))
+      [(>= (+ store-count! 1) (vector-length the-store!))
        (double-store!)
        (add-to-store! val)
        (ref-val (- store-count! 1))]
@@ -223,6 +222,9 @@
 
 (define value-of-exp
   (lambda (exp env)
+    (display (env->string env))
+    (display (vector->list the-store!))
+    (newline)
     (cases expression exp
 
 	   ;; Variable Expressions

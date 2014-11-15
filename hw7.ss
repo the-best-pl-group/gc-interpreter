@@ -86,13 +86,13 @@
 (define the-store! 'uninitialized)
 (define store-count! 'uninitialized)
 (define empty-store-spots! 'uninitialized)
-
+(define empty-value 'empty)
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
 (define empty-store
   (lambda ()
-    (make-vector 5)))
+    (make-vector 5 empty-value)))
 
 ;; (initialize-store!) it initializes the-store! to (empty-store)
 (define initialize-store!
@@ -104,7 +104,7 @@
 ;; doubles the size of the store
 (define double-store!
   (lambda ()
-    (set! the-store! (double-store!* the-store! (make-vector (* 2 (vector-length the-store!))) 0))))
+    (set! the-store! (double-store!* the-store! (make-vector (* 2 (vector-length the-store!)) empty-value) 0))))
 
 (define double-store!*
   (lambda (old-store new-store ref-num)
@@ -132,7 +132,7 @@
 ;;removes a value from the store & adds the now empty index to empty-store-spots!
 (define remove-from-store!
   (lambda (ref-num)
-    (vector-set! the-store! ref-num 0)
+    (vector-set! the-store! ref-num empty-value)
     (set! empty-store-spots! (cons ref-num empty-store-spots!))))
 
 ;; (newref! val) takes a value val adds to the the-store!, and returns

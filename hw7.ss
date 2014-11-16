@@ -267,7 +267,7 @@
     (cases environment new-environment
       [extend-env (var val old-environment)
 		  (remove-from-store! (expval->ref val))]
-      [else (display "you done goofed")])))
+      [else (raise-exception 'let-garbage-collect "Environment used is not a proper environment or is empty and shouldn't be.")])))
 
 ;;Garbage collection for the call case
 (define call-garbage-collect

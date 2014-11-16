@@ -86,9 +86,13 @@
 
 ;; the-store! is the store!
 (define the-store! 'uninitialized)
+;; the ammount of items stored in the store
 (define store-count! 'uninitialized)
+;; a list of the empty spots in the store
 (define empty-store-spots! 'uninitialized)
+;; the value to fill empty locations in the store with
 (define empty-value 'empty)
+;; Global var to momentarily store the refference location for a proc-val expression
 (define proc-val-ref 'uninitialized)
 
 ;; (empty-store) return an empty Scheme list representing the empty

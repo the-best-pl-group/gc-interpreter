@@ -269,6 +269,7 @@
   (lambda (ref-vals)
     (map (lambda (x) (remove-from-store! x)) ref-vals)
     (remove-from-store! proc-val-ref)
+    (set! proc-val-ref 'uninitialized)
     ))
 
 (define count 0)

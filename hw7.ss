@@ -243,6 +243,10 @@
 		  (remove-from-store! (expval->ref val))]
       [else (display "you done goofed")])))
 
+(define call-garbage-collect
+  (lambda (ref-vals)
+    (map (lambda (x) (remove-from-store! x)) ref-vals)))
+
 (define count 0)
 
 (define value-of-exp
@@ -260,9 +264,9 @@
 
 			;;	      (display count)
 			;;	      (set! count (+ count 1))
-			;;	      (display (env->string env))
-			;;	      (display (vector->list the-store!))
-			;;	      (newline)
+				      (display (env->string env))
+				      (display (vector->list the-store!))
+				      (newline)
 
 				      return-value)]
 
@@ -296,7 +300,10 @@
 	   ;; Procedures
 	   [proc-exp (vars body) (proc-val (procedure vars body env))]                                      
 	   [call-exp (exp exps)                                                                          
-		     (cases proc (expval->proc (value-of-exp exp env))                                                               
+		(define ref-vals! '()) 
+
+        (let ([return-value 
+        (cases proc (expval->proc (value-of-exp exp env))                                                               
 			    [procedure (params body saved-env)                                                        
 				       (cond
 					 [(= (length params) (length exps)) 
@@ -304,13 +311,25 @@
 					    ([vals (map (lambda (x) (value-of-exp x env)) exps)])
 					    (value-of-exp body 
 							  (accumulate 
-							    (lambda (head acc) (extend-env (car head) (newref! (cdr head)) acc)) 
+							    (lambda (head acc) 
+                                  (let ([ref (newref! (cdr head))])
+                                  (set! ref-vals! (cons (expval->ref ref) ref-vals!))
+                                  (extend-env (car head) ref acc))) 
 							    saved-env
 							    (reverse (map (lambda (param val) (cons param val)) params vals)))))]
 					 [else (raise-exception 'value-of-exp 
-								"Attempt to apply function with inconsistent number of arguments: ~s ~s." exp exps)])])]
+								"Attempt to apply function with inconsistent number of arguments: ~s ~s." exp exps)])])])
+          (call-garbage-collect ref-vals!)
+          return-value)]
 	   [letrec-exp (p-name p-vars p-body body)                                                         
-		       (value-of-exp body (extend-env-rec p-name p-vars p-body env))]     
+		       (let* ([newenv (extend-env-rec p-name p-vars p-body env)]
+                                         [return-value (value-of-exp body newenv)])
+                                    (display (env->string env))
+                                    (newline)
+                                    (display (vector->list the-store!))
+                                    (newline)
+
+                                    return-value)]
 
 	   ;; Printing
 	   [print-exp (exp) (display (expval->string (value-of-exp exp env))) (unit-val)]
@@ -395,7 +414,9 @@
 	 [(equal? code "!debug1")
 	  (trace value-of value-of-exp)
 	  (untrace expval->num expval->bool expval->string expval->proc)]
-	 [(equal? code "!debug2")
+	 [(equal? code "!debug11") (trace newref!)]
+
+     [(equal? code "!debug2")
 	  (trace value-of value-of-exp expval->num expval->bool expval->string expval->proc)]
 	 [(equal? code "!debug3")
 	  (trace value-of value-of-exp expval->num expval->bool expval->string apply-env expval->proc extend-env empty-env)]

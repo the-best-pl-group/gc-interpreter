@@ -260,6 +260,8 @@
                    [else (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))])]
 	   [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
 
+
+;;Garbage collection for the let case
 (define let-garbage-collect 
   (lambda (new-environment)
     (cases environment new-environment
@@ -267,16 +269,16 @@
 		  (remove-from-store! (expval->ref val))]
       [else (display "you done goofed")])))
 
+;;Garbage collection for the call case
 (define call-garbage-collect
   (lambda (ref-vals)
     (map (lambda (x) (remove-from-store! x)) ref-vals)))
 
+;; Garbage collection for the letrec case
 (define letrec-garbage-collect
   (lambda ()
     (remove-from-store! proc-val-ref)
     (set! proc-val-ref 'uninitialized)))
-
-(define count 0)
 
 (define value-of-exp
   (lambda (exp env)

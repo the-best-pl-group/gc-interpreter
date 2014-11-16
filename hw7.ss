@@ -95,7 +95,7 @@
 ;; the value to fill empty locations in the store with
 (define empty-value 'empty)
 ;; Global var to momentarily store the refference location for a proc-val expression
-(define proc-val-refs '())
+(define proc-val-refs 'uninitialized)
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
@@ -108,6 +108,7 @@
   (lambda ()
     (set! store-count! 0)
     (set! the-store! (empty-store))
+    (set! proc-val-refs '())
     (set! empty-store-spots! '())))
 
 ;; doubles the size of the store

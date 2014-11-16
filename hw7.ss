@@ -92,7 +92,7 @@
 ;; store.
 (define empty-store
   (lambda ()
-    (make-vector 5 empty-value)))
+    (make-vector 2 empty-value)))
 
 ;; (initialize-store!) it initializes the-store! to (empty-store)
 (define initialize-store!
@@ -164,12 +164,13 @@
 
 (define garbage-collect!
   (lambda (env)
-    (let ([new-store (make-vector (vector-length the-store!) empty-value)])
+    (let* ([vals-to-keep (to-keep env)]
+	   [new-store (make-vector (length vals-to-keep) empty-value)])
       (map (lambda (x) (vector-set!
 			 new-store
 			 (cdr x)
 			 (car x)))
-	   (to-keep env))
+	   vals-to-keep)
       (set! the-store! new-store))))
 
 (define to-keep

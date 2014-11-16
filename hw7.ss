@@ -402,7 +402,7 @@
 (define start
   (lambda ()
     (begin
-      (display "\n=== Welcome to the Basic HW 5 Interpreter === \n\n")
+      (display "\n=== Welcome to the Garbage Collector 9000 Interpreter === \n\n")
       (initialize-store!)
       (read-eval-print (make-init-env)))))
 

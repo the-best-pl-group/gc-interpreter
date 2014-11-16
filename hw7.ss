@@ -267,10 +267,12 @@
 
 (define call-garbage-collect
   (lambda (ref-vals)
-    (map (lambda (x) (remove-from-store! x)) ref-vals)
+    (map (lambda (x) (remove-from-store! x)) ref-vals)))
+
+(define letrec-garbage-collect
+  (lambda ()
     (remove-from-store! proc-val-ref)
-    (set! proc-val-ref 'uninitialized)
-    ))
+    (set! proc-val-ref 'uninitialized)))
 
 (define count 0)
 
@@ -344,8 +346,9 @@
           return-value)]
 	   [letrec-exp (p-name p-vars p-body body)                                                         
 		       (let* ([newenv (extend-env-rec p-name p-vars p-body env)]
-                                         [return-value (value-of-exp body newenv)])
-                                    return-value)]
+                              [return-value (value-of-exp body newenv)])
+			 (letrec-garbage-collect)
+			 return-value)]
 
 	   ;; Printing
 	   [print-exp (exp) (display (expval->string (value-of-exp exp env))) (unit-val)]

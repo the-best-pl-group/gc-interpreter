@@ -45,7 +45,7 @@
          (cond                                                                                       
            [(equal? p-name target-var)
             (let ([return (newref! (proc-val (procedure p-vars p-body env)))])
-              (set! proc-val-ref (expval->ref return))
+              (set! proc-val-refs (cons (expval->ref return) proc-val-refs))
               return)]                                                
            [else (apply-env env* target-var)])])))      
 
@@ -95,7 +95,7 @@
 ;; the value to fill empty locations in the store with
 (define empty-value 'empty)
 ;; Global var to momentarily store the refference location for a proc-val expression
-(define proc-val-ref 'uninitialized)
+(define proc-val-refs '())
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
@@ -279,8 +279,8 @@
 ;; Garbage collection for the letrec case
 (define letrec-garbage-collect
   (lambda ()
-    (remove-from-store! proc-val-ref)
-    (set! proc-val-ref 'uninitialized)))
+    (map (lambda (x) (remove-from-store! x)) proc-val-refs)
+    (set! proc-val-refs '())))
 
 (define value-of-exp
   (lambda (exp env)

@@ -57,7 +57,9 @@
      'pi (newref! (num-val 3.14159))
      (extend-env
       'e (newref! (num-val 2.71828))
-      (empty-env)))))
+      (extend-env
+        'the-meaning-of-life (newref! (num-val 42))
+      (empty-env))))))
 
 (define env->string
   (lambda (env)

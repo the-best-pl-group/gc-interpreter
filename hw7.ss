@@ -162,6 +162,25 @@
       ([ref (expval->ref ev)])
       (vector-set! the-store! ref val))))
 
+(define garbage-collect!
+  (lambda (env)
+    (let ([new-store (make-vector (vector-length the-store!) empty-value)])
+      (map (lambda (x) (vector-set!
+			 new-store
+			 (cdr x)
+			 (car x)))
+	   (to-keep env))
+      (set! the-store! new-store))))
+
+(define to-keep
+  (lambda (env)
+    (cases environment env
+	   [empty-env () '()]
+	   [extend-env (var val env*) (cons
+					(cons (deref val) (expval->ref val))
+					(to-keep env*))]
+	   [else (raise-exception 'garbage-collection-to-keep "to-keep garbage collection broke")])))
+
 ;; ==================== Expressed Values ==================================
 
 ;; Expressed values are Int + Bool + Unit
@@ -238,9 +257,9 @@
 
 (define value-of-exp
   (lambda (exp env)
-    (display (env->string env))
-    (display (vector->list the-store!))
-    (newline)
+;;    (display (env->string env))
+;;    (display (vector->list the-store!))
+;;    (newline)
     (cases expression exp
 
 	   ;; Variable Expressions
@@ -386,6 +405,9 @@
 	 [(equal? code "!env")
 	  (display (env->string env))
 	  (newline)]
+	 [(equal? code "!store")
+	  (display (vector->list the-store!)) ;; this should be fixed so that it prints human-readable output
+	  (newline)]
 	 [(equal? code "!reset-env")
 	  (set! env (make-init-env))]
 	 [else
@@ -402,4 +424,5 @@
 	       (set! env new-env)  
 	       (newline)
 	       )))])
+	(garbage-collect! env)
 	(read-eval-print env)]))))

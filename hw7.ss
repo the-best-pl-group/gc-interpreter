@@ -43,8 +43,10 @@
            [else (apply-env env* target-var)])]                                                      
       [extend-env-rec (p-name p-vars p-body env*)                                                     
          (cond                                                                                       
-           [(equal? p-name target-var)                                                               
-             (newref! (proc-val (procedure p-vars p-body env)))]                                                
+           [(equal? p-name target-var)
+            (let ([return (newref! (proc-val (procedure p-vars p-body env)))])
+              (set! proc-val-ref (expval->ref return))
+              return)]                                                
            [else (apply-env env* target-var)])])))      
 
 ;; ============== Environment Helper Functions ======================
@@ -87,6 +89,7 @@
 (define store-count! 'uninitialized)
 (define empty-store-spots! 'uninitialized)
 (define empty-value 'empty)
+(define proc-val-ref 'uninitialized)
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
@@ -245,7 +248,9 @@
 
 (define call-garbage-collect
   (lambda (ref-vals)
-    (map (lambda (x) (remove-from-store! x)) ref-vals)))
+    (map (lambda (x) (remove-from-store! x)) ref-vals)
+    (remove-from-store! proc-val-ref)
+    ))
 
 (define count 0)
 
@@ -261,13 +266,6 @@
 	   [let-exp (var exp1 exp2) (let* ([newenv (extend-env var (newref! (value-of-exp exp1 env)) env)]
 					   [return-value (value-of-exp exp2 newenv)])
 				      (let-garbage-collect newenv)
-
-			;;	      (display count)
-			;;	      (set! count (+ count 1))
-				      (display (env->string env))
-				      (display (vector->list the-store!))
-				      (newline)
-
 				      return-value)]
 
 	   ;; Constant Expressions
@@ -324,11 +322,6 @@
 	   [letrec-exp (p-name p-vars p-body body)                                                         
 		       (let* ([newenv (extend-env-rec p-name p-vars p-body env)]
                                          [return-value (value-of-exp body newenv)])
-                                    (display (env->string env))
-                                    (newline)
-                                    (display (vector->list the-store!))
-                                    (newline)
-
                                     return-value)]
 
 	   ;; Printing
@@ -414,8 +407,6 @@
 	 [(equal? code "!debug1")
 	  (trace value-of value-of-exp)
 	  (untrace expval->num expval->bool expval->string expval->proc)]
-	 [(equal? code "!debug11") (trace newref!)]
-
      [(equal? code "!debug2")
 	  (trace value-of value-of-exp expval->num expval->bool expval->string expval->proc)]
 	 [(equal? code "!debug3")
@@ -423,6 +414,9 @@
 	 [(equal? code "!env")
 	  (display (env->string env))
 	  (newline)]
+     [(equal? code "!store")
+      (display (vector->list the-store!))
+      (newline)]
 	 [(equal? code "!reset-env")
 	  (set! env (make-init-env))]
 	 [else

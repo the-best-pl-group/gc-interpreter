@@ -232,11 +232,28 @@
 
 ;; ==================== Evaluater ====================================
 
+
+;; Returns true iff the variable appears in the environment
+(define in-env?
+  (lambda (var env)
+    (cases environment env
+           [empty-env () #f]
+           [extend-env (var* val* env*)
+                (cond
+                  [(equal? var var*) #t]
+                  [else (in-env? var env*)])]
+           [extend-env-rec (pname pvars pbody env*)
+                (in-env? var env*)]
+           [else (raise-exception 'in-env? "Environment you're searching in is not a proper environment.")])))
+
 (define value-of
   (lambda (prog env)
     (cases program prog
 	   [a-prog (exp) (cons (value-of-exp exp env) env)]
-	   [def-prog (var exp) (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))]
+	   [def-prog (var exp)
+                 (cond
+                   [(in-env? var env) (setref! (apply-env env var) (value-of-exp exp env)) (cons (unit-val) env)]
+                   [else (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))])]
 	   [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
 
 (define let-garbage-collect 

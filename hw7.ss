@@ -329,7 +329,7 @@
 
 (define mark
   (lambda (env)
-    (cases envionment env
+    (cases environment env
       [empty-env () '()]
       [extend-env (var val env*) (mark* val) (mark env*)]
       [extend-env-rec (p-name p-vars p-body env*) (mark env*) ]
@@ -365,7 +365,7 @@
                 (cond
                   [(not (cdr val-pair))
                    (remove-from-store! acc)])
-                (sweeep* (+ acc 1))]
+                (sweep* (+ acc 1))]
             ))]
       [else 'done])))
 ;; ==================== Evaluation Helper Functions ====================
@@ -468,4 +468,7 @@
 	       (set! env new-env)  
 	       (newline)
 	       )))])
+    (unmark-all)
+    (mark env)
+    (sweep)
 	(read-eval-print env)]))))

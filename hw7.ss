@@ -96,6 +96,9 @@
 (define empty-value 'empty)
 ;; Global var to momentarily store the refference location for a proc-val expression
 (define proc-val-refs 'uninitialized)
+;;
+(define let-rem? 'uninitialized)
+
 
 ;; (empty-store) return an empty Scheme list representing the empty
 ;; store.
@@ -109,7 +112,8 @@
     (set! store-count! 0)
     (set! the-store! (empty-store))
     (set! proc-val-refs '())
-    (set! empty-store-spots! '())))
+    (set! empty-store-spots! '())
+    (set! let-rem? #t)))
 
 ;; doubles the size of the store
 (define double-store!
@@ -243,17 +247,24 @@
   (lambda (prog env)
     (cases program prog
 	   [a-prog (exp) (cons (value-of-exp exp env) env)]
-	   [def-prog (var exp) (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))]
+	   [def-prog (var exp) 
+                 (set! let-rem? #f)
+                 (let ([return (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))])
+                                    (set! let-rem? #t)
+                                    return)]
 	   [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
 
 
 ;;Garbage collection for the let case
 (define let-garbage-collect 
   (lambda (new-environment)
-    (cases environment new-environment
-      [extend-env (var val old-environment)
-		  (remove-from-store! (expval->ref val))]
-      [else (raise-exception 'let-garbage-collect "Environment used is not a proper environment or is empty and shouldn't be.")])))
+    (cond 
+      [let-rem?
+        (cases environment new-environment
+            [extend-env (var val old-environment)
+		        (remove-from-store! (expval->ref val))]
+            [else (raise-exception 'let-garbage-collect "Environment used is not a proper environment or is empty and shouldn't be.")])
+        ])))
 
 ;;Garbage collection for the call case
 (define call-garbage-collect

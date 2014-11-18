@@ -345,7 +345,7 @@
         [bool-val (bool) (mark-ref ref-num)]
         [proc-val (p)
             (cases proc p
-                [procedure (params body env*) (mark env*)]
+                [procedure (params body env*) (mark-ref ref-num) (mark env*)]
                 [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
         [ref-val (ref*) (mark-ref ref-num) (mark* (deref ref*))]))))
 

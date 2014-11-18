@@ -349,6 +349,25 @@
                 [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
         [ref-val (ref*) (mark-ref ref-num) (mark* (deref ref*))]))))
 
+(define sweep
+  (lambda ()
+    (sweep* 0)))
+
+(define sweep*
+  (lambda (acc)
+    (cond
+      [(< acc (vector-length the-store!))
+       (let ([val-pair (vector-ref the-store! acc)])
+          (cond 
+            [(equal? val-pair empty-value) 
+             (sweep* (+ acc 1))]
+            [else
+                (cond
+                  [(not (cdr val-pair))
+                   (remove-from-store! acc)])
+                (sweeep* (+ acc 1))]
+            ))]
+      [else 'done])))
 ;; ==================== Evaluation Helper Functions ====================
 
 (define all?

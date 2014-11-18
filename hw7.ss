@@ -350,7 +350,7 @@
             (cases proc p
                 [procedure (params body env*) (mark env*)]
                 [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
-        [rev-val (ref*) (mark-ref ref-num) (mark* (deref ref*))]))))
+        [ref-val (ref*) (mark-ref ref-num) (mark* (deref ref*))]))))
 
 ;; ==================== Evaluation Helper Functions ====================
 

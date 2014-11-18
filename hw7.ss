@@ -263,9 +263,6 @@
 
 (define value-of-exp
   (lambda (exp env)
-    (display (env->string env))
-    (display (vector->list the-store!))
-    (newline)
     (cases expression exp
 
 	   ;; Variable Expressions

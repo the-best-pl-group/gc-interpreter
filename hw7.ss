@@ -97,7 +97,7 @@
 ;; Global var to momentarily store the refference location for a proc-val expression
 (define proc-val-refs 'uninitialized)
 ;;
-(define let-rem? 'uninitialized)
+(define in-def? 'uninitialized)
 
 
 ;; (empty-store) return an empty Scheme list representing the empty
@@ -113,7 +113,7 @@
     (set! the-store! (empty-store))
     (set! proc-val-refs '())
     (set! empty-store-spots! '())
-    (set! let-rem? #t)))
+    (set! in-def? #t)))
 
 ;; doubles the size of the store
 (define double-store!
@@ -248,9 +248,9 @@
     (cases program prog
 	   [a-prog (exp) (cons (value-of-exp exp env) env)]
 	   [def-prog (var exp) 
-                 (set! let-rem? #f)
+                 (set! in-def? #f)
                  (let ([return (cons (unit-val) (extend-env var (newref! (value-of-exp exp env)) env))])
-                                    (set! let-rem? #t)
+                                    (set! in-def? #t)
                                     return)]
 	   [else (raise-exception 'value-of-prog "Abstract syntax case not implemented: ~s" (car prog))])))
 
@@ -259,7 +259,7 @@
 (define let-garbage-collect 
   (lambda (new-environment)
     (cond 
-      [let-rem?
+      [in-def?
         (cases environment new-environment
             [extend-env (var val old-environment)
 		        (remove-from-store! (expval->ref val))]

@@ -118,12 +118,12 @@
 (define add-to-store!
   (lambda (val)
     (cond [(null? empty-store-spots!)
-            (vector-set! the-store! store-count! val)
+            (vector-set! the-store! store-count! (cons val #f))
             (set! store-count! (+ 1 store-count!))
             (ref-val (- store-count! 1))]
           [else
             (let [(ref (car empty-store-spots!))]
-                (vector-set! the-store! ref val)
+                (vector-set! the-store! ref (cons val #f))
                 (set! store-count (+ 1 store-count!))
                 (set! empty-store-spots! (cdr empty-store-spots!))
                 (ref-val ref))]
@@ -152,15 +152,28 @@
   (lambda (ev)
     (let 
       ([ref (expval->ref ev)])
-      (vector-ref the-store! ref))))
+      (car (vector-ref the-store! ref)))))
 
 ;; (setref! ev val) expects that ev is a reference (ref-val ref), and
 ;; it sets the reference ref to val in the the-store!
 (define setref!
   (lambda (ev val)
-    (let
-      ([ref (expval->ref ev)])
-      (vector-set! the-store! ref val))))
+    (let*
+      ([ref (expval->ref ev)]
+       [store-val (vector-ref the-store! ref)])
+      (cond
+	[(pair? store-val) (vector-set! the-store! ref (cons val (cdr (vector-ref the-store! ref))))]
+	[else (vector-set! the-store! ref (cons val #f))]))))
+
+;; marks a store value as having a reference to it
+(define mark
+  (lambda (ref)
+    (vector-set! the-store! ref (cons (car (vector-ref the-store! ref)) #t))))
+
+;; unmarks all the values in the store
+(define unmark-all
+  (lambda ()
+    (unmark-all* 0)))
 
 ;; ==================== Expressed Values ==================================
 

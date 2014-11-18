@@ -175,6 +175,18 @@
   (lambda ()
     (unmark-all* 0)))
 
+(define unmark-all*
+  (lambda (acc)
+    (cond
+      [(< acc (vector-length the-store!))
+          (cond 
+            [(equal? (vector-ref the-store! acc) empty-value) (unmark-all* (+ acc 1))]
+            [else
+                (vector-set! the-store! acc (cons (car (vector-ref the-store! acc)) #f))
+                (unmark-all* (+ acc 1))]
+            )]
+      [else 'done])))
+
 ;; ==================== Expressed Values ==================================
 
 ;; Expressed values are Int + Bool + Unit

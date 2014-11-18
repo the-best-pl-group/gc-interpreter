@@ -453,6 +453,7 @@
 	  (display (vector->list the-store!))
 	  (newline)]
 	 [(equal? code "!reset-env")
+      (initialize-store!)
 	  (set! env (make-init-env))]
 	 [else
 	 ;; Parse code, eval expression, and print result.

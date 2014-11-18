@@ -166,7 +166,7 @@
 	[else (vector-set! the-store! ref (cons val #f))]))))
 
 ;; marks a store value as having a reference to it
-(define mark
+(define mark-ref
   (lambda (ref)
     (vector-set! the-store! ref (cons (car (vector-ref the-store! ref)) #t))))
 
@@ -317,6 +317,28 @@
 	   [block-exp (exps) (accumulate (lambda (exp acc) (value-of-exp exp env)) (unit-val) exps)]
 
 	   [else (raise-exception 'value-of-exp "Abstract syntax case not implemented: ~s" (car exp))])))
+
+(define mark
+  (lambda (env)
+    (cases envionment env
+      [empty-env () '()]
+      [extend-env (var val env*) (mark* val) (mark env*)]
+      [extend-env-rec (p-name p-vars p-body env*) (mark env*) ]
+      [else (raise-exception 'mark "Evironment is not an environment that I'd want to live in")])))
+
+(define mark*
+  (lambda (ref)
+    (let* ([ev (deref ref)]
+          [ref-num (expval->ref ref)])
+    (cases expval ev
+        [unit-val () (mark-ref ref-num)]
+        [num-val (num) (mark-ref ref-num)]
+        [bool-val (bool) (mark-ref ref-num)]
+        [proc-val (p)
+            (cases proc p
+                [procedure (params body env*) (mark env*)]
+                [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
+        [rev-val (ref*) (mark-ref ref-num) (mark* (deref ref*))]))))
 
 ;; ==================== Evaluation Helper Functions ====================
 

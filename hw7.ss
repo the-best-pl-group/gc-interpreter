@@ -433,6 +433,9 @@
 	 [(equal? code "!env")
 	  (display (env->string env))
 	  (newline)]
+	[(equal? code "!store")
+	  (display (vector->list the-store!))
+	  (newline)]
 	 [(equal? code "!reset-env")
 	  (set! env (make-init-env))]
 	 [else

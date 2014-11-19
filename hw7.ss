@@ -347,7 +347,10 @@
             (cases proc p
                 [procedure (params body env*) (mark-ref ref-num) (mark env*)]
                 [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
-        [ref-val (ref*) (mark-ref ref-num) (mark* (deref ref*))]))))
+        [ref-val (ref*) (mark-ref ref-num) 
+                 (cond
+                   [(cdr (vector-ref the-store! ref*))]
+                   [else (mark* ev)])]))))
 
 (define sweep
   (lambda ()
@@ -410,7 +413,8 @@
 (define start
   (lambda ()
     (begin
-      (display "\n=== Welcome to the Basic HW 5 Interpreter === \n\n")
+      (display "\n=== Welcome to the Garbage Collector 9000 V2.0: === \n")     
+      (display "\n===    Now with a working garbage collector!    === \n\n")
       (initialize-store!)
       (read-eval-print (make-init-env)))))
 

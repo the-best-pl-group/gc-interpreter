@@ -1,4 +1,4 @@
-;; hw7-starter.ss
+;; John Peterson, Jessica Sanford, Frank Chiarulli Jr.
 
 (load "hw7-includes.ss")
 

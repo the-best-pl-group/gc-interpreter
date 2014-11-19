@@ -215,7 +215,8 @@
                 [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
         [ref-val (ref*) (mark-ref ref-num) 
                  (cond
-                   [(cdr (vector-ref the-store! ref*))]
+                   [(cdr (vector-ref the-store! ref*)) ] ;;takes care of a circular reference chain, 
+                                                         ;; so that once all values in the chain are marked to true, recursion stops
                    [else (mark* ev)])]))))
 
 ;; removes all values from the store not marked findable from the environment by (mark env)

@@ -165,6 +165,8 @@
 	[(pair? store-val) (vector-set! the-store! ref (cons val (cdr (vector-ref the-store! ref))))]
 	[else (vector-set! the-store! ref (cons val #f))]))))
 
+;; =============== Garbage Collection ====================
+
 ;; marks a store value as having a reference to it
 (define mark-ref
   (lambda (ref)
@@ -185,6 +187,56 @@
                 (vector-set! the-store! acc (cons (car (vector-ref the-store! acc)) #f))
                 (unmark-all* (+ acc 1))]
             )]
+      [else 'done])))
+
+;; recursively traverses an environment, sending exp-vals to mark*
+(define mark
+  (lambda (env)
+    (cases environment env
+      [empty-env () '()]
+      [extend-env (var val env*) (mark* val) (mark env*)]
+      [extend-env-rec (p-name p-vars p-body env*) (mark env*) ]
+      [else (raise-exception 'mark "Evironment is not an environment that I'd want to live in")])))
+
+;; marks the terminal case types in the store (primitive values) as being
+;; traceable starting from the environment. does the same for proc-vals
+;; and ref-vals, but also looks inside them to trace their references inside of them
+(define mark*
+  (lambda (ref)
+    (let* ([ev (deref ref)]
+          [ref-num (expval->ref ref)])
+    (cases expval ev
+        [unit-val () (mark-ref ref-num)]
+        [num-val (num) (mark-ref ref-num)]
+        [bool-val (bool) (mark-ref ref-num)]
+        [proc-val (p)
+            (cases proc p
+                [procedure (params body env*) (mark-ref ref-num) (mark env*)]
+                [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
+        [ref-val (ref*) (mark-ref ref-num) 
+                 (cond
+                   [(cdr (vector-ref the-store! ref*))]
+                   [else (mark* ev)])]))))
+
+;; removes all values from the store not marked findable from the environment by (mark env)
+(define sweep
+  (lambda ()
+    (sweep* 0)))
+
+(define sweep*
+  (lambda (acc)
+    (cond
+      [(< acc (vector-length the-store!))
+       (let ([val-pair (vector-ref the-store! acc)])
+          (cond 
+            [(equal? val-pair empty-value) 
+             (sweep* (+ acc 1))]
+            [else
+                (cond
+                  [(not (cdr val-pair))
+                   (remove-from-store! acc)])
+                (sweep* (+ acc 1))]
+            ))]
       [else 'done])))
 
 ;; ==================== Expressed Values ==================================
@@ -327,50 +379,6 @@
 
 	   [else (raise-exception 'value-of-exp "Abstract syntax case not implemented: ~s" (car exp))])))
 
-(define mark
-  (lambda (env)
-    (cases environment env
-      [empty-env () '()]
-      [extend-env (var val env*) (mark* val) (mark env*)]
-      [extend-env-rec (p-name p-vars p-body env*) (mark env*) ]
-      [else (raise-exception 'mark "Evironment is not an environment that I'd want to live in")])))
-
-(define mark*
-  (lambda (ref)
-    (let* ([ev (deref ref)]
-          [ref-num (expval->ref ref)])
-    (cases expval ev
-        [unit-val () (mark-ref ref-num)]
-        [num-val (num) (mark-ref ref-num)]
-        [bool-val (bool) (mark-ref ref-num)]
-        [proc-val (p)
-            (cases proc p
-                [procedure (params body env*) (mark-ref ref-num) (mark env*)]
-                [else (raise-exception 'mark "How did you manage to make a proc-val that isn't a procedure? Go you. xD")])]
-        [ref-val (ref*) (mark-ref ref-num) 
-                 (cond
-                   [(cdr (vector-ref the-store! ref*))]
-                   [else (mark* ev)])]))))
-
-(define sweep
-  (lambda ()
-    (sweep* 0)))
-
-(define sweep*
-  (lambda (acc)
-    (cond
-      [(< acc (vector-length the-store!))
-       (let ([val-pair (vector-ref the-store! acc)])
-          (cond 
-            [(equal? val-pair empty-value) 
-             (sweep* (+ acc 1))]
-            [else
-                (cond
-                  [(not (cdr val-pair))
-                   (remove-from-store! acc)])
-                (sweep* (+ acc 1))]
-            ))]
-      [else 'done])))
 ;; ==================== Evaluation Helper Functions ====================
 
 (define all?

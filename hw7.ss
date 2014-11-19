@@ -414,7 +414,7 @@
   (lambda ()
     (begin
       (display "\n=== Welcome to the Garbage Collector 9000 V2.0: === \n")     
-      (display "\n===    Now with a working garbage collector!    === \n\n")
+      (display "===    Now with a working garbage collector!    === \n\n")
       (initialize-store!)
       (read-eval-print (make-init-env)))))
 
